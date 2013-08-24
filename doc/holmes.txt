@@ -1,0 +1,219 @@
+*holmes.txt*	For Vim version 7.3	Last change: 2013 August 24
+
+
+		  HOLMES PLUGIN DOCUMENTATION
+
+
+Author: Daan Bakker <info@dbakker.com>
+License: Same terms as Vim itself (see |license|)
+
+1. Commands		|holmes-commands|
+2. Backend program	|holmes-backend|
+3. Customizing		|holmes-customizing|
+4. Mappings		|holmes-mappings|
+6. Algorithms		|holmes-algorithms|
+7. About		|holmes-about|
+
+Some parts of the documentation and Vimscript of this plugin are based on the
+Ack.vim plugin by Antoine Imbert. Many of the ideas are reused from the `grep`
+and `ack-grep` utilities.
+
+=============================================================================
+COMMANDS			*holmes-commands*
+
+:Holmes[!] [options] {pattern} [{directory}]			       *:Holmes*
+
+	Search recursively in {directory} (which defaults to the current
+	directory) for the {pattern}.  Behaves just like the |:grep| command, but
+	will open the |Quickfix| window for you. If [!] is not given the first
+	error is jumped to.
+
+:HolmesL[!] {literal}						      *:HolmesL*
+
+	Searches recursively in the current directory for the given literal. The
+	literal may contain symbols and spaces. If no literal is given, the
+	current word under the cursor or currently selected thing is searched for
+	instead.
+
+:HolmesAdd [options] {pattern} [{directory}]			    *:HolmesAdd*
+
+	Just like |:Holmes|, but instead of making a new list, the matches are
+	appended to the current |quickfix| list.
+
+:HolmesFromSearch [{directory}]				     *:HolmesFromSearch*
+
+	Just like |:Holmes| but the pattern is from previous search.
+
+:LHolmes [options] {pattern} [{directory}]			      *:LHolmes*
+
+	Just like |:Holmes| but instead of the |quickfix| list, matches are placed
+	in the current |location-list|.
+
+:LHolmesAdd [options] {pattern} [{directory}]			   *:LHolmesAdd*
+
+	Just like |:HolmesAdd| but instead of the |quickfix| list, matches are added
+	to the current |location-list|
+
+Files containing the search term will be listed in the split window, along
+with the line number of the occurrence, once for each occurrence.  <Enter> on
+a line in this window will open the file, and place the cursor on the matching
+line.
+
+=============================================================================
+BACKEND				*holmes-backend*
+
+When executing the |:Holmes| command, there are a number of command line
+options one can give that are very similar to those of `grep`. Run the
+following to find out what the available arguments are:
+>
+    :Holmes --help
+
+Sample result:
+
+usage: holmes.py [-h] [--message-size MESSAGE_SIZE] [--source SOURCE]
+                 [--ignore-dir IGNORED_DIRS] [--smart-case] [-n] [-r]
+                 [--exclude EXCLUDE_FILES] [--low-priority LOW_PRIORITY_GLOBS]
+                 [-Q] [-i] [-w] [--max-results MAX_RESULTS]
+                 pattern [file [file ...]]
+
+Grep replacement for Vim
+
+positional arguments:
+  pattern               pattern to find.
+  file                  Files to search.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --message-size MESSAGE_SIZE
+                        set the maximum size to which messages should be
+                        trimmed
+  --source SOURCE       the source file the regular expression came from, used
+                        to sort results more relevantly
+  --ignore-dir IGNORED_DIRS
+                        Ignore directory.
+  --smart-case          simulates the "smartcase" setting of Vim. make regular
+                        expressions with no upper case letters ignore case
+  -n, --no-recurse      no descending into subdirectories
+  -r, -R, --recurse     recurse into subdirectories
+  --exclude EXCLUDE_FILES
+                        Exclude files matching the specified glob.
+  --low-priority LOW_PRIORITY_GLOBS
+                        Put files matching the given glob at the bottom of the
+                        results list.
+  -Q, --literal         search for the given pattern literally instead of as
+                        regex
+  -i, -y, --ignore-case
+                        ignore case distinctions in the pattern
+  -w, --word-regexp     select only those lines containing whole words
+  --max-results MAX_RESULTS
+                        never return more than the specified number of results
+
+=============================================================================
+CUSTOMIZING			*holmes-customizing*
+
+				*'g:holmes_exclude'*
+Default: ''
+Any files matching the given globs will not show up in the results: >
+	let g:holmes_exclude = '*.zip;*.iso'
+<
+
+				*'b:holmes_exclude'*
+Same as |g:holmes_exclude|, but for the current buffer only.
+
+				*'g:holmes_low_priority'*
+Default: ''
+Any files matching the given globs will show up last in the search results: >
+	let g:holmes_low_priority = '*.log'
+<
+
+				*'b:holmes_low_priority'*
+Same as |g:holmes_low_priority|, but for the current buffer only.
+
+				*'g:holmes_smartcase'*
+Default: auto
+Regular expressions or search strings only containing lowercase characters
+will match any case string. If this setting is not defined Holmes will inherit
+this setting from Vims |smartcase| option: >
+	let g:holmes_smartcase = 1
+<
+
+				*'g:holmes_extra_args'*
+Default: ''
+Defines any arguments that should always be added to Holmes: >
+	let g:holmes_extra_args = '--max-results 1000'
+<
+
+				*'b:holmes_extra_args'*
+Same as |g:holmes_extra_args|, but for the current buffer only.
+
+				*'q:holmes_apply_qmappings'*
+Default: 1
+Add mappings to the quickfix result window >
+	let g:holmes_apply_qmappings = 0
+<
+
+				*'q:holmes_apply_lmappings'*
+Same as as |q:holmes_apply_qmappings| but for the location window.
+
+==============================================================================
+MAPPINGS						     *holmes-mappings*
+
+You can map your own keys for holmes. Here are some examples: >
+
+    nmap <leader>hm <Plug>(holmes-motion)
+    xmap <leader>hm <Plug>(holmes-motion)
+    nmap <leader>hw <Plug>(holmes-inner-word)
+    xmap <leader>hw <Plug>(holmes-inner-word)
+    nmap <leader>hs :Holmes<space>
+    nmap <leader>hl :HolmesL<space>
+
+Want to search your entire project by default? Install my other plugin,
+`vim-projectroot`, and add something like this: >
+
+    nmap <leader>hp :ProjectRootExe Holmes<space>
+
+The following keyboard shortcuts are available in the quickfix window:
+
+o	open file (same as enter).
+
+go	preview file (open but maintain focus on ack.vim results).
+
+t	open in a new tab.
+
+T	open in new tab silently.
+
+h	open in horizontal split.
+
+H	open in horizontal split silently.
+
+v	open in vertical split.
+
+gv	open in vertical split silently.
+
+q	close the quickfix window.
+
+==============================================================================
+ALGORITHMS						     *holmes-algorithms*
+
+The search sorting algorithm currently gives the following priorities:
+
+1. Current file
+2. Files with the same root name (eg. foo.c and foo.h)
+3. Files with the same file extension
+4. Files in the same directory
+5. Files in subdirectories
+6. Files in upper directories
+7. Files given a 'low priority' from the command line
+
+If you have a better idea let me know!
+
+=============================================================================
+ABOUT				*holmes-about*
+
+If you find any bugs, have questions, suggestions or comments check out:
+
+	https://github.com/dbakker/vim-holmes
+
+Happy vimming!
+
+ vim:tw=78:ts=8:ft=help:norl:noet:
