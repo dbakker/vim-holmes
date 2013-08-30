@@ -5,7 +5,8 @@ let autoloaded_holmes = 1
 
 if !exists('s:holmes_exe')
   let paths = substitute(escape(&runtimepath, ' '), '\(,\|$\)', '/**\1', 'g')
-  let s:holmes_exe = "python '".fnamemodify(findfile('holmes.py', paths), ':p')."'"
+  let python = executable('python2') ? 'python2' : 'python'
+  let s:holmes_exe = python." '".fnamemodify(findfile('holmes.py', paths), ':p')."'"
 
   if &shell == '/bin/zsh'
     let s:holmes_exe = 'noglob '.s:holmes_exe
