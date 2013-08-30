@@ -72,6 +72,15 @@ fun! holmes#search(cmd, args)
     let &grepformat=grepformat_bak
   endtry
 
+  let results = a:cmd =~# '^l' ? getloclist() : getqflist()
+  if !exists('g:holmes_show_empty') && (len(results) == 0 || (len(results) == 1 && len(results[0]["text"] == 0)))
+    redraw!
+    echohl ErrorMsg
+    echomsg 'Holmes: no results found'
+    echohl NONE
+    return
+  endif
+
   if a:cmd =~# '^l'
     exe g:holmes_lhandler
     let l:apply_mappings = g:holmes_apply_lmappings
